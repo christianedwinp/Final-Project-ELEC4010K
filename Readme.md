@@ -14,9 +14,9 @@
 
 ## HOW TO DEMO
 >run the following task in sequential order :
-1. open terminal and run 'roscore'
-2. open Vrep simulator and load '~/demo_elec4010k/src/env.ttt'
-3. open another terminal and run 'roslaunch demo_elec4010k startdemo.launch'
+1. open terminal and run `roscore`
+2. open Vrep simulator and load `~/demo_elec4010k/src/env.ttt`
+3. open another terminal and run `roslaunch demo_elec4010k startdemo.launch`
 
 ><p>you can navigate through a simulated environment and display 2D map in the RVIZ.
 save the 2D map if needed.
