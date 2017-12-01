@@ -1,18 +1,18 @@
-#HKUST ELEC 4010K FALL 2017 FINAL PROJECT
-##INTRODUCTION
+# HKUST ELEC 4010K FALL 2017 FINAL PROJECT
+## INTRODUCTION
 > This ROS package is to launch a robot in RVIZ simulation program that can do :
-1. Create 2D map from laser scanner
-2. Move within simulated environment using keyboard input
-3. Conduct image recognition and estimate position of the detected image
-4. Track yellow colour object
+- Create 2D map from laser scanner
+- Move within simulated environment using keyboard input
+- Conduct image recognition and estimate position of the detected image
+- Track yellow colour object
 
-##PREREQUISITE
-1. ROS distro, in this case we use indigo
+## PREREQUISITE
+1. ROS environment (this repo refers to indigo version)
 2. VREP simulator
-3. rviz packages
-4. opencv packages
+3. RVIZ package
+4. OpenCV packages
 
-##HOW TO DEMO
+## HOW TO DEMO
 >run the following task in sequential order :
 1. open terminal and run 'roscore'
 2. open Vrep simulator and load '~/demo_elec4010k/src/env.ttt'
