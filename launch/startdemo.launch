@@ -53,13 +53,16 @@
   <node pkg="tf" type="static_transform_publisher" name="nav2base_broadcaster" args="0 0 0 0 0 0 nav base_link 100"/>
 
   <!--START RVIZ-->
-
-
+  <node pkg="rviz" type="rviz" name="demo_rviz" 
+    args="-d $(find demo_elec4010k)/src/hector.rviz"/>
+  
   <!--START KEY TELEOP-->
-  <node pkg=“demo_elec4010k” type=“??” name=“??” output=“screen”>
-    <remap from="mytele_keyboard/cmd_vel" to="cmd_vel_mux/input/teleop"/>
+  <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop">
+    <remap from="/cmd_vel" to="/vrep/cmd_vel"/>
   </node>
-
+  <!--<node pkg="key_teleop" type="key_teleop.py" name="key_teleop">
+    <remap from="cmd_vel" to="vrep/cmd_vel"/>
+  </node>-->
   
 
 </launch>
