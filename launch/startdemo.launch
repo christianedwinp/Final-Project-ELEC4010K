@@ -3,8 +3,6 @@
 <launch>
   
   <!--START HECTOR SLAM-->
-  <param name="/use_sim_time" value="true"/>
-
   <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
   <arg name="base_frame" default="base_link"/>
   <arg name="odom_frame" default="nav"/>
@@ -54,10 +52,10 @@
   <!--TF package-->
   <node pkg="tf" type="static_transform_publisher" name="world2map_broadcaster" args="0 0 0 0 0 0 world map 100"/>
   <node pkg="tf" type="static_transform_publisher" name="nav2base_broadcaster" args="0 0 0 0 0 0 nav base_link 100"/>
-  <!--WHAT IF I USE TF2 ?-->
-  <!--<node pkg="tf2_ros" type="static_transform_publisher" name="world2map_broadcaster" args="1 0 0 0 0 0 1 world map 100"/>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="nav2base_broadcaster" args="1 0 0 0 0 0 1 nav base_link 100"/>-->
-
+  <!--WHAT IF I USE TFF2 ?-->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="world2map_broadcaster" args="1 0 0 0 0 0 1 world map 100"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="nav2base_broadcaster" args="1 0 0 0 0 0 1 nav base_link 100"/>
+ -->
 
 
   <!--START RVIZ-->
@@ -68,9 +66,9 @@
   <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop">
     <remap from="/cmd_vel" to="/vrep/cmd_vel"/>
   </node>
-  <!--<node pkg="key_teleop" type="key_teleop.py" name="key_teleop">
-    <remap from="cmd_vel" to="vrep/cmd_vel"/>
-  </node>-->
+  <!-- <node pkg="key_teleop" type="key_teleop.py" name="key_teleop">
+    <remap from="/key_vel" to="/vrep/cmd_vel"/>
+  </node> -->
   
 
 </launch>
