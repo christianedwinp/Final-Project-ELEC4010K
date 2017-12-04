@@ -10,7 +10,7 @@
   <arg name="odom_frame" default="nav"/>
   <arg name="pub_map_odom_transform" default="true"/>
   <arg name="scan_subscriber_queue_size" default="5"/>
-  <arg name="scan_topic" default="/scan"/>
+  <arg name="scan_topic" default="/vrep/scan"/>
   <arg name="map_size" default="1024"/>
   
   <node pkg="hector_mapping" type="hector_mapping" name="hector_mapping" output="screen">
@@ -24,6 +24,7 @@
     <param name="use_tf_scan_transformation" value="true"/>
     <param name="use_tf_pose_start_estimate" value="false"/>
     <param name="pub_map_odom_transform" value="$(arg pub_map_odom_transform)"/>
+    <!--<param name="pub_map_odom_transform" value="true"/>-->
     
     <!-- Map size / start point -->
     <param name="map_resolution" value="0.050"/>
@@ -49,8 +50,15 @@
     <param name="tf_map_scanmatch_transform_frame_name" value="$(arg tf_map_scanmatch_transform_frame_name)" />
   </node>
 
+
+  <!--TF package-->
   <node pkg="tf" type="static_transform_publisher" name="world2map_broadcaster" args="0 0 0 0 0 0 world map 100"/>
   <node pkg="tf" type="static_transform_publisher" name="nav2base_broadcaster" args="0 0 0 0 0 0 nav base_link 100"/>
+  <!--WHAT IF I USE TF2 ?-->
+  <!--<node pkg="tf2_ros" type="static_transform_publisher" name="world2map_broadcaster" args="1 0 0 0 0 0 1 world map 100"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="nav2base_broadcaster" args="1 0 0 0 0 0 1 nav base_link 100"/>-->
+
+
 
   <!--START RVIZ-->
   <node pkg="rviz" type="rviz" name="demo_rviz" 
