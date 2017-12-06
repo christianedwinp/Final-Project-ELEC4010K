@@ -130,6 +130,7 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/demo_elec4010k.cpp
 # )
+add_library(opencv_image_processing  src/image_processing.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -154,6 +155,7 @@ add_executable(rosopencv_interface 	src/image_converter.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
     rosopencv_interface
+    opencv_image_processing
    	${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )

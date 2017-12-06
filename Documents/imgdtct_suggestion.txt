@@ -1,0 +1,4 @@
+1st approach : feature detection mapping -> set matching threshold
+2nd approach : HOG -> check matching threshold
+3rd approach : image warping 
+4th approach : canny edge detection -> hough line -> image deskew -> template matching

@@ -60,7 +60,11 @@ public:
     }
 
     cv::Mat flippedImage;
-    //flip image 
+    /* flip image
+    * flipcode = 0 -> flip on X axis
+    * flipcode > 0 -> flip on Y axis
+    * flipcode < 0 -> flip on both axis
+    */
     cv::flip(cv_ptr->image, flippedImage, 1);
 
     // Update GUI Window
