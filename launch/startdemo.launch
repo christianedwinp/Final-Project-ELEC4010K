@@ -48,15 +48,9 @@
     <param name="tf_map_scanmatch_transform_frame_name" value="$(arg tf_map_scanmatch_transform_frame_name)" />
   </node>
 
-
   <!--TF package-->
   <node pkg="tf" type="static_transform_publisher" name="world2map_broadcaster" args="0 0 0 0 0 0 world map 100"/>
   <node pkg="tf" type="static_transform_publisher" name="nav2base_broadcaster" args="0 0 0 0 0 0 nav base_link 100"/>
-  <!--WHAT IF I USE TFF2 ?-->
-  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="world2map_broadcaster" args="1 0 0 0 0 0 1 world map 100"/>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="nav2base_broadcaster" args="1 0 0 0 0 0 1 nav base_link 100"/>
- -->
-
 
   <!--START RVIZ-->
   <node pkg="rviz" type="rviz" name="demo_rviz" 
@@ -69,6 +63,10 @@
   <!-- <node pkg="key_teleop" type="key_teleop.py" name="key_teleop">
     <remap from="/key_vel" to="/vrep/cmd_vel"/>
   </node> -->
-  
+
+  <!--START ROS-CV IMAGE CONVERSION-->
+  <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"/>
+    <!--<remap from="/vrep/image" to="/ros-opencv_interface/image"
+  </node>-->
 
 </launch>

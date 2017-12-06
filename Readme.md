@@ -1,6 +1,6 @@
 # HKUST ELEC 4010K FALL 2017 FINAL PROJECT
 ## INTRODUCTION
-> This ROS package is to launch a robot in RVIZ simulation program that can do :
+> This ROS package is created to launch a robot in RVIZ simulation program that can do :
 - Create 2D map from laser scanner
 - Move within simulated environment using keyboard input
 - Conduct image recognition and estimate position of the detected image

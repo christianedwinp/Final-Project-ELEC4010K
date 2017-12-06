@@ -5,6 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+//image window name
 static const std::string OPENCV_WINDOW = "Image window";
 
 class ImageConverter
@@ -18,24 +19,38 @@ public:
   ImageConverter()
     : it_(nh_)
   {
-    // Subscrive to input video feed and publish output video feed
-    image_sub_ = it_.subscribe("/camera/image_raw", 1,
+    //Subscribe to VREP image and publish converted image
+    image_sub_ = it_.subscribe("/vrep/image", 1,
       &ImageConverter::imageCb, this);
-    image_pub_ = it_.advertise("/image_converter/output_video", 1);
+    image_pub_ = it_.advertise("/rosopencv_interface/image", 1);
 
+    //OpenCV HighGUI calls to create a display window on start-up
     cv::namedWindow(OPENCV_WINDOW);
   }
 
+  //OpenCV HighGUI calls to destroy a display window on shutdown
   ~ImageConverter()
   {
     cv::destroyWindow(OPENCV_WINDOW);
   }
 
+  //subscriber callback
   void imageCb(const sensor_msgs::ImageConstPtr& msg)
   {
+    //convert ROS image to CvImage that is suitable to work with OpenCV
+    //must use 'try' and 'catch' format
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
+      //convert to suitable color encoding scheme
+      /*color encoding scheme:
+       * mono8  : CV_8UC1, grayscale image
+       * mono16 : CV_16UC1, 16-bit grayscale image
+       * bgr8   : CV_8UC3, color image with blue-green-red color order
+       * rgb8   : CV_8UC3, color image with red-green-blue color order
+       * bgra8  : CV_8UC4, BGR color image with an alpha channel
+       * rgba8  : CV_8UC4, RGB color image with an alpha channel
+      */
       cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     }
     catch (cv_bridge::Exception& e)
@@ -44,7 +59,7 @@ public:
       return;
     }
 
-    // Draw an example circle on the video stream
+    // Draw an example circle on the image stream
     if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
       cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
 
@@ -52,14 +67,14 @@ public:
     cv::imshow(OPENCV_WINDOW, cv_ptr->image);
     cv::waitKey(3);
 
-    // Output modified video stream
+    // Output modified image stream
     image_pub_.publish(cv_ptr->toImageMsg());
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "image_converter");
+  ros::init(argc, argv, "rosopencv_interface");
   ImageConverter ic;
   ros::spin();
   return 0;
