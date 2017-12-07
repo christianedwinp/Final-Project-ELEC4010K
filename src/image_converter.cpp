@@ -4,9 +4,12 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/features2d/features2d.hpp"
 
+using namespace cv;
 //image window name
 static const std::string OPENCV_WINDOW = "Image window";
+static const std::string OPENCV_WINDOW2 = "Image window2";
 
 class ImageConverter
 {
@@ -26,12 +29,14 @@ public:
 
     //OpenCV HighGUI calls to create a display window on start-up
     cv::namedWindow(OPENCV_WINDOW);
+    cv::namedWindow(OPENCV_WINDOW2);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
   ~ImageConverter()
   {
     cv::destroyWindow(OPENCV_WINDOW);
+    cv::destroyWindow(OPENCV_WINDOW2);
   }
 
   //subscriber callback
@@ -59,16 +64,42 @@ public:
       return;
     }
 
-    cv::Mat flippedImage;
-    /* flip image
-    * flipcode = 0 -> flip on X axis
-    * flipcode > 0 -> flip on Y axis
-    * flipcode < 0 -> flip on both axis
-    */
-    cv::flip(cv_ptr->image, flippedImage, 1);
+    cv::Mat flippedImage, test, imgThresholded;
+    // Use HSV param for yellow tracking
+    int iLowH = 20;
+    int iHighH = 30;
 
-    // Update GUI Window
+    int iLowS = 100; 
+    int iHighS = 255;
+
+    int iLowV = 100;
+    int iHighV = 255;
+    
+    //flip image 
+    cv::flip(cv_ptr->image, flippedImage, 1);
     cv::imshow(OPENCV_WINDOW, flippedImage);
+    
+    // Map BGR to HSV
+    cvtColor(flippedImage, test, COLOR_BGR2HSV);
+    // Update GUI Window
+    inRange(test, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
+    //morphological opening (removes small objects from the foreground)
+    erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+    dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+
+     //morphological closing (removes small holes from the foreground)
+    dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+    erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+
+     //Calculate the moments of the thresholded image
+    Moments oMoments = moments(imgThresholded);
+
+    double dM01 = oMoments.m01;
+    double dM10 = oMoments.m10;
+    double dArea = oMoments.m00;
+
+
+    cv::imshow(OPENCV_WINDOW2, imgThresholded);
     cv::waitKey(3);
 
     // Output modified image stream
