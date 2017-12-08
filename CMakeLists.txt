@@ -154,10 +154,7 @@ add_executable(rosopencv_interface 	src/image_converter.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
     rosopencv_interface
-<<<<<<< HEAD
     opencv_nonfree 
-=======
->>>>>>> e9ceb6000a291a7f17a8b9d161d8e35698a0882e
    	${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )

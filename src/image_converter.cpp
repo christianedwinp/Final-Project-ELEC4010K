@@ -4,14 +4,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-<<<<<<< HEAD
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/nonfree/features2d.hpp>
-=======
 #include "opencv2/features2d/features2d.hpp"
->>>>>>> e9ceb6000a291a7f17a8b9d161d8e35698a0882e
 
 using namespace cv;
 //image window name
@@ -48,47 +45,9 @@ public:
     cv::destroyWindow(OPENCV_WINDOW2);
   }
 
-  //subscriber callback
-  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  cv::Mat ImageDetector(const cv::Mat flippedImage)
   {
-    //convert ROS image to CvImage that is suitable to work with OpenCV
-    //must use 'try' and 'catch' format
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-      //convert to suitable color encoding scheme
-      /*color encoding scheme:
-       * mono8  : CV_8UC1, grayscale image
-       * mono16 : CV_16UC1, 16-bit grayscale image
-       * bgr8   : CV_8UC3, color image with blue-green-red color order
-       * rgb8   : CV_8UC3, color image with red-green-blue color order
-       * bgra8  : CV_8UC4, BGR color image with an alpha channel
-       * rgba8  : CV_8UC4, RGB color image with an alpha channel
-      */
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
-    }
-
-<<<<<<< HEAD
-    // =============================================
-    // FLIPPED IMAGE
-    // =============================================
-    cv::Mat flippedImage;
-    /* flip image
-    * flipcode = 0 -> flip on X axis
-    * flipcode > 0 -> flip on Y axis
-    * flipcode < 0 -> flip on both axis
-    */
-    cv::flip(cv_ptr->image, flippedImage, 1);
-
-    // =============================================
-    // SURF FLANNMATCHER + HOMOGRAPHY
-    // =============================================
-    //-- Step 1: Detect the keypoints using SURF Detector
+  	//-- Step 1: Detect the keypoints using SURF Detector
     int minHessian = 400;
     SurfFeatureDetector detector( minHessian );
     std::vector<KeyPoint> keypoints_1, keypoints_2, keypoints_3, keypoints_4, keypoints_5, keypoints_stream;
@@ -168,8 +127,55 @@ public:
 
     // Update GUI Window
     cv::imshow(OPENCV_WINDOW, img_matches);
-=======
-    cv::Mat flippedImage, test, imgThresholded;
+    return img_matches;
+    
+  }
+
+  //subscriber callback
+  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  {
+    //convert ROS image to CvImage that is suitable to work with OpenCV
+    //must use 'try' and 'catch' format
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      //convert to suitable color encoding scheme
+      /*color encoding scheme:
+       * mono8  : CV_8UC1, grayscale image
+       * mono16 : CV_16UC1, 16-bit grayscale image
+       * bgr8   : CV_8UC3, color image with blue-green-red color order
+       * rgb8   : CV_8UC3, color image with red-green-blue color order
+       * bgra8  : CV_8UC4, BGR color image with an alpha channel
+       * rgba8  : CV_8UC4, RGB color image with an alpha channel
+      */
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    // =============================================
+    // FLIPPED IMAGE
+    // =============================================
+    cv::Mat flippedImage;
+    /* flip image
+    * flipcode = 0 -> flip on X axis
+    * flipcode > 0 -> flip on Y axis
+    * flipcode < 0 -> flip on both axis
+    */
+    cv::flip(cv_ptr->image, flippedImage, 1);
+
+    // =============================================
+    // SURF FLANNMATCHER + HOMOGRAPHY
+    // =============================================
+    cv::Mat output_detector = ImageDetector(flippedImage);
+    // =============================================
+    // BLOB TRACKING
+    // =============================================
+
+    cv::Mat test, imgThresholded;
     // Use HSV param for yellow tracking
     int iLowH = 20;
     int iHighH = 30;
@@ -179,11 +185,7 @@ public:
 
     int iLowV = 100;
     int iHighV = 255;
-    
-    //flip image 
-    cv::flip(cv_ptr->image, flippedImage, 1);
-    cv::imshow(OPENCV_WINDOW, flippedImage);
-    
+        
     // Map BGR to HSV
     cvtColor(flippedImage, test, COLOR_BGR2HSV);
     // Update GUI Window
@@ -203,15 +205,16 @@ public:
     double dM10 = oMoments.m10;
     double dArea = oMoments.m00;
 
-
     cv::imshow(OPENCV_WINDOW2, imgThresholded);
->>>>>>> e9ceb6000a291a7f17a8b9d161d8e35698a0882e
     cv::waitKey(3);
 
-    // Output modified image stream
+    // =============================================
+    // SEND BACK EDITED IMAGE IN CV TO ROS SENSOR MESSAGE
+    // =============================================
     cv_bridge::CvImage img_bridge;
     sensor_msgs::Image img_msg;
     std_msgs::Header header;
+    //change the output image as suitable
     img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, flippedImage); //convert CVimage to ROS
     img_bridge.toImageMsg(img_msg); 
     image_pub_.publish(img_msg); 
@@ -222,6 +225,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "rosopencv_interface");
   
+  //LOAD IMAGE DATASET
   if( argc != 2)
     {
      std::cout << "Missing arguments" << std::endl;
