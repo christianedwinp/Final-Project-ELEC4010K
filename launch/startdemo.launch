@@ -64,7 +64,8 @@
     <remap from="/key_vel" to="/vrep/cmd_vel"/>
   </node> -->
 
-  <!--START ROS-CV IMAGE CONVERSION-->
-  <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"/>
+  <!--START ROS-CV IMAGE CONVERSION AND IMAGE PROCESSING-->
+  <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"
+    args="$(find demo_elec4010k)/src/picture/pic001.jpg"/>
 
 </launch>
