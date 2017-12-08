@@ -139,7 +139,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(rosopencv_interface 	src/image_converter.cpp)
+add_executable(rosopencv_interface  src/image_converter.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,8 +154,7 @@ add_executable(rosopencv_interface 	src/image_converter.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(
     rosopencv_interface
-    opencv_nonfree 
-   	${catkin_LIBRARIES}
+    ${catkin_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )
 
