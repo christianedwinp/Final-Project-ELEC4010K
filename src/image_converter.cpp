@@ -28,7 +28,7 @@ using namespace cv;
 //image window name
 static const std::string OPENCV_WINDOW = "Image window";
 static const std::string OPENCV_WINDOW2 = "Image window2";
-static const std::string OPENCV_WINDOW3 = "Image Haar Detect";
+// static const std::string OPENCV_WINDOW3 = "Image Haar Detect";
 
 //Make HaarCascade Related Var
 
@@ -80,7 +80,7 @@ public:
     //OpenCV HighGUI calls to create a display window on start-up
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
-    cv::namedWindow(OPENCV_WINDOW3);
+    // cv::namedWindow(OPENCV_WINDOW3);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -88,7 +88,7 @@ public:
   {
     cv::destroyWindow(OPENCV_WINDOW);
     cv::destroyWindow(OPENCV_WINDOW2);
-    cv::destroyWindow(OPENCV_WINDOW3);
+    // cv::destroyWindow(OPENCV_WINDOW3);
   }
 
   // cv::Mat ImageDetector(const cv::Mat flippedImage)
@@ -212,7 +212,7 @@ public:
     * flipcode < 0 -> flip on both axis
     */
     cv::flip(cv_ptr->image, flippedImage, 1);
-    cv::imshow(OPENCV_WINDOW, flippedImage);
+    // cv::imshow(OPENCV_WINDOW, flippedImage);
 
     // =============================================
     // BLOB TRACKING
@@ -302,7 +302,7 @@ public:
     cv::Mat im_gray;
     cv:cvtColor(flippedImage, im_gray, CV_BGR2GRAY);
     cv::equalizeHist( im_gray, im_gray );
-    face_cascade_.detectMultiScale(im_gray, detected_faces, 1.1, 5, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40));
+    face_cascade_.detectMultiScale(im_gray, detected_faces, 1.1, 4, 0|CV_HAAR_SCALE_IMAGE, cv::Size(50, 50));
     unsigned index = 0;
     if(detected_faces.size() >= 1) {
       // Do Something
@@ -312,7 +312,7 @@ public:
       // Draw on screen.
       cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5); 
     }
-    cv::imshow(OPENCV_WINDOW3, flippedImage);
+    cv::imshow(OPENCV_WINDOW, flippedImage);
 
 
 
