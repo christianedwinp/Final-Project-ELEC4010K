@@ -86,7 +86,7 @@ public:
     //OpenCV HighGUI calls to create a display window on start-up
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
-    cv::namedWindow(OPENCV_WINDOW3);
+    if(image_collection) cv::namedWindow(OPENCV_WINDOW3);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -94,7 +94,7 @@ public:
   {
     cv::destroyWindow(OPENCV_WINDOW);
     cv::destroyWindow(OPENCV_WINDOW2);
-    cv::destroyWindow(OPENCV_WINDOW3);
+    if(image_collection) cv::destroyWindow(OPENCV_WINDOW3);
   }
 
   // cv::Mat ImageDetector(const cv::Mat flippedImage)
@@ -316,9 +316,9 @@ public:
         //do comparison
       }
       // Draw on screen.
-      croppedImage = flippedImage(detected_faces[index]);
-      cv::imshow(OPENCV_WINDOW3, croppedImage);
       if (image_collection) {
+        croppedImage = flippedImage(detected_faces[index]);
+        cv::imshow(OPENCV_WINDOW3, croppedImage);
         std::stringstream ss_path;
         ss_path << image_address << "image" << image_counter << ".jpg";
         actual_image_path = ss_path.str();
