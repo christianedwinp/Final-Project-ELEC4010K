@@ -28,6 +28,12 @@ using namespace cv;
 //image window name
 static const std::string OPENCV_WINDOW = "Image window";
 static const std::string OPENCV_WINDOW2 = "Image window2";
+static const std::string OPENCV_WINDOW3 = "Cropped Faces";
+std::string image_address = "../catkin_ws/src/demo_elec4010k/image/";
+std::string actual_image_path;
+Mat croppedImage;
+int image_counter = 0;
+bool image_collection = false; //change to true for training
 // static const std::string OPENCV_WINDOW3 = "Image Haar Detect";
 
 //Make HaarCascade Related Var
@@ -80,7 +86,7 @@ public:
     //OpenCV HighGUI calls to create a display window on start-up
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
-    // cv::namedWindow(OPENCV_WINDOW3);
+    cv::namedWindow(OPENCV_WINDOW3);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -88,7 +94,7 @@ public:
   {
     cv::destroyWindow(OPENCV_WINDOW);
     cv::destroyWindow(OPENCV_WINDOW2);
-    // cv::destroyWindow(OPENCV_WINDOW3);
+    cv::destroyWindow(OPENCV_WINDOW3);
   }
 
   // cv::Mat ImageDetector(const cv::Mat flippedImage)
@@ -310,11 +316,18 @@ public:
         //do comparison
       }
       // Draw on screen.
-      cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5); 
+      croppedImage = flippedImage(detected_faces[index]);
+      cv::imshow(OPENCV_WINDOW3, croppedImage);
+      if (image_collection) {
+        std::stringstream ss_path;
+        ss_path << image_address << "image" << image_counter << ".jpg";
+        actual_image_path = ss_path.str();
+        image_counter++;
+        cv::imwrite(actual_image_path ,croppedImage);
+      }
+      cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
     }
     cv::imshow(OPENCV_WINDOW, flippedImage);
-
-
 
     cv::waitKey(3);
     cv_ptr->image = flippedImage;
