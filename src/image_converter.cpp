@@ -40,6 +40,8 @@ bool image_collection = false; //change to true for training
 std::vector<Mat> images;
 std::vector<int> labels;
 int label_prediction = -1;
+double confidence_level = -1;
+const double THRESHOLD = 1500;
 /******************/
 
 
@@ -402,9 +404,10 @@ public:
       // Image Detection
       cv::Mat im_resized;
       label_prediction = -1;
+      confidence_level = -1;
       cv::resize(croppedImage, im_resized, cv::Size(55,55));
       cv::cvtColor(im_resized, im_resized, CV_BGR2GRAY);
-      label_prediction = model->predict(im_resized);
+      model->predict(im_resized, label_prediction, confidence_level);
       /***********************/
       /*******/
       // Classify person
@@ -430,10 +433,8 @@ public:
         default:
           break;
       }
-      text_to_put << label_prediction;
+      text_to_put << label_prediction << " " << confidence_level;
       text_to_write = text_to_put.str();
-      cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
-
       /*******/
       // Draw on screen.
       if (image_collection) {
@@ -444,7 +445,13 @@ public:
         image_counter++;
         cv::imwrite(actual_image_path ,croppedImage);
       }
-      cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
+      /**********************************************/
+      // Give Marker only if confidence level <= threshold (distance)
+      if (confidence_level <= THRESHOLD) {
+        cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
+        cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
+      }
+      /******************************************************/
     }
     cv::imshow(OPENCV_WINDOW, flippedImage);
 
