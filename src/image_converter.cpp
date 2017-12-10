@@ -17,7 +17,7 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/features2d/features2d.hpp"
-
+#include "opencv2/face.hpp"
 //For Debugging
 #include "std_msgs/String.h"
 #include "std_msgs/Bool.h"
@@ -34,9 +34,14 @@ std::string actual_image_path;
 Mat croppedImage;
 int image_counter = 0;
 bool image_collection = false; //change to true for training
-// static const std::string OPENCV_WINDOW3 = "Image Haar Detect";
 
-//Make HaarCascade Related Var
+/******************/
+// Face Recognizer
+std::vector<Mat> images;
+std::vector<int> labels;
+int label_prediction = -1;
+/******************/
+
 
 // Mat img_1, img_2, img_3, img_4, img_5;
 bool auto_control_condition = false;
@@ -59,6 +64,10 @@ class ImageConverter
   // Haar Cascade
   cv::CascadeClassifier face_cascade_;
   cv::HOGDescriptor hog_;
+  /***************/
+  // Detection
+  Ptr<face::FaceRecognizer> model;
+
 public:
   ImageConverter()
     : it_(nh_)
@@ -87,6 +96,79 @@ public:
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
     if(image_collection) cv::namedWindow(OPENCV_WINDOW3);
+
+    /************/
+    // Train Datasets
+    std::string directories;
+    // for (int i = 1; i < 6; i++) {
+    //   std::stringstream training_directories;
+    //   training_directories << image_address << "pic00" << i << ".jpg";
+    //   directories = training_directories.str();
+    //   images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(i-1);
+    // }
+    //images for first person
+    for (int i = 0; i < 42; i++) {
+        std::stringstream training_directories;
+        if (i < 10) {
+            training_directories << image_address << "person1/0" << i << ".jpg";
+        } else {
+            training_directories << image_address << "person1/" << i << ".jpg";
+        }
+        directories = training_directories.str();
+        images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);    
+    }
+    
+    // images for second person
+    for (int i = 0; i < 49; i++) {
+        std::stringstream training_directories;
+        if (i < 10) {
+            training_directories << image_address << "person2/0" << i << ".jpg";
+        } else {
+            training_directories << image_address << "person2/" << i << ".jpg";
+        }
+        directories = training_directories.str();
+        images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);    
+    }
+
+    // images for third person
+    for (int i = 0; i < 110; i++) {
+        std::stringstream training_directories;
+        if (i < 10) {
+            training_directories << image_address << "person3/0" << i << ".jpg";
+        } else {
+            training_directories << image_address << "person3/" << i << ".jpg";
+        }
+        directories = training_directories.str();
+        images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(2);    
+    }
+
+    // images for fourth person
+    for (int i = 0; i < 26; i++) {
+        std::stringstream training_directories;
+        if (i < 10) {
+            training_directories << image_address << "person4/0" << i << ".jpg";
+        } else {
+            training_directories << image_address << "person4/" << i << ".jpg";
+        }
+        directories = training_directories.str();
+        images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(3);    
+    }
+
+    // images for fifth person
+    for (int i = 0; i < 44; i++) {
+        std::stringstream training_directories;
+        if (i < 10) {
+            training_directories << image_address << "person5/0" << i << ".jpg";
+        } else {
+            training_directories << image_address << "person5/" << i << ".jpg";
+        }
+        directories = training_directories.str();
+        images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(4);    
+    }
+    model = face::createEigenFaceRecognizer();
+    model->train(images,labels);
+
+    /************/
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -315,9 +397,46 @@ public:
       if(detected_faces.size() > 1) {
         //do comparison
       }
+      croppedImage = flippedImage(detected_faces[index]);
+      /************************/
+      // Image Detection
+      cv::Mat im_resized;
+      label_prediction = -1;
+      cv::resize(croppedImage, im_resized, cv::Size(55,55));
+      cv::cvtColor(im_resized, im_resized, CV_BGR2GRAY);
+      label_prediction = model->predict(im_resized);
+      /***********************/
+      /*******/
+      // Classify person
+      // Add confidence level to differentiate w ground
+      std::stringstream text_to_put;
+      std::string text_to_write;
+      switch(label_prediction) {
+        case 0:
+          text_to_put << "Obama ";
+          break;
+        case 1:
+          text_to_put << "Avril ";
+          break;
+        case 2:
+          text_to_put << "Legolas ";
+          break;
+        case 3:
+          text_to_put << "Levi ";
+          break;
+        case 4:
+          text_to_put << "Chinese dude ";
+          break;
+        default:
+          break;
+      }
+      text_to_put << label_prediction;
+      text_to_write = text_to_put.str();
+      cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
+
+      /*******/
       // Draw on screen.
       if (image_collection) {
-        croppedImage = flippedImage(detected_faces[index]);
         cv::imshow(OPENCV_WINDOW3, croppedImage);
         std::stringstream ss_path;
         ss_path << image_address << "image" << image_counter << ".jpg";
