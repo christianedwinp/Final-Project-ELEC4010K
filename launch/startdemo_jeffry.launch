@@ -56,6 +56,7 @@
  <!--  <node pkg="rviz" type="rviz" name="demo_rviz" 
     args="-d $(find demo_elec4010k)/src/hector.rviz"/>
  -->  
+ <param name="face_cascade_name" value="$(find demo_elec4010k)/config/haarcascade_frontalface_alt.xml" />
   <!--START KEY TELEOP-->
   <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop">
     <remap from="/cmd_vel" to="/vrep/cmd_vel"/>
