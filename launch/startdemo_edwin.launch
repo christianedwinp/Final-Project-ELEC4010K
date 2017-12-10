@@ -62,11 +62,6 @@
   </node>
 
   <!--START ROS-CV IMAGE CONVERSION AND IMAGE PROCESSING-->
-  <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"
-    args="$(find demo_elec4010k)/src/picture/pic001.jpg
-    $(find demo_elec4010k)/src/picture/pic002.jpg
-    $(find demo_elec4010k)/src/picture/pic003.jpg
-    $(find demo_elec4010k)/src/picture/pic004.jpg
-    $(find demo_elec4010k)/src/picture/pic005.jpg"/>
+  <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"/>
   
 </launch>

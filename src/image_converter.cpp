@@ -6,9 +6,9 @@
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
-
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/Twist.h>
+#include <visualization_msgs/Marker.h>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -35,19 +35,19 @@ Mat croppedImage;
 int image_counter = 0;
 bool image_collection = false; //change to true for training
 
-/******************/
-// Face Recognizer
+// Face Recognition variable
 std::vector<Mat> images;
 std::vector<int> labels;
 int label_prediction = -1;
 double confidence_level = -1;
 const double THRESHOLD = 1500;
-/******************/
 
-
-// Mat img_1, img_2, img_3, img_4, img_5;
+//Blob tracking variable
 bool auto_control_condition = false;
 float x_pos, y_pos, orientation;
+
+//Marker RVIZ variable
+uint32_t uniqueID;
 
 class ImageConverter
 {
@@ -69,6 +69,10 @@ class ImageConverter
   /***************/
   // Detection
   Ptr<face::FaceRecognizer> model;
+
+  // Send RVIZ Marker
+  ros::Publisher marker_pub;
+  visualization_msgs::MarkerArray marker_array;
 
 public:
   ImageConverter()
@@ -171,6 +175,9 @@ public:
     model->train(images,labels);
 
     /************/
+
+    //publish image marker to RVIZ
+    marker_pub = nh_.advertise<visualization_msgs::Marker>("imgdetected_marker", 1);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -180,92 +187,6 @@ public:
     cv::destroyWindow(OPENCV_WINDOW2);
     if(image_collection) cv::destroyWindow(OPENCV_WINDOW3);
   }
-
-  // cv::Mat ImageDetector(const cv::Mat flippedImage)
-  // {
-  //  //-- Step 1: Detect the keypoints using SURF Detector
-  //   int minHessian = 400;
-  //   SurfFeatureDetector detector( minHessian );
-  //   std::vector<KeyPoint> keypoints_1, keypoints_2, keypoints_3, keypoints_4, keypoints_5, keypoints_stream;
-  //   detector.detect( img_1, keypoints_1 );
-  //   // detector.detect( img_2, keypoints_2 );
-  //   // detector.detect( img_3, keypoints_3 );
-  //   // detector.detect( img_4, keypoints_4 );
-  //   // detector.detect( img_5, keypoints_5 );
-  //   detector.detect( flippedImage, keypoints_stream );
-
-  //   //-- Step 2: Calculate descriptors (feature vectors)
-  //   // cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SurfDescriptorExtractor;
-  //   SurfDescriptorExtractor extractor;
-  //   Mat descriptors_1, descriptors_2, descriptors_3, descriptors_4, descriptors_5, descriptors_stream;
-  //   extractor.compute( img_1, keypoints_1, descriptors_1 );
-  //   // extractor.compute( img_2, keypoints_2, descriptors_2 );
-  //   // extractor.compute( img_3, keypoints_3, descriptors_3 );
-  //   // extractor.compute( img_4, keypoints_4, descriptors_4 );
-  //   // extractor.compute( img_5, keypoints_5, descriptors_5 );
-  //   extractor.compute( flippedImage, keypoints_stream, descriptors_stream );
-
-  //   // //-- Step 3: Matching descriptor vectors using FLANN matcher 
-  //   FlannBasedMatcher matcher;
-  //   //matching process pic001.jpg
-  //   std::vector< DMatch > matches;
-  //   matcher.match( descriptors_1, descriptors_stream, matches );
-
-  //   // //-- Quick calculation of max and min distances between keypoints_1
-  //   double max_dist = 0; double min_dist = 100;
-  //   for( int i = 0; i < descriptors_1.rows; i++ ){ 
-  //     double dist = matches[i].distance;
-  //     if( dist < min_dist ) min_dist = dist;
-  //     if( dist > max_dist ) max_dist = dist;
-  //   }
-  //   printf("-- Max dist : %f \n", max_dist );
-  //   printf("-- Min dist : %f \n", min_dist );
-
-  //   // //-- Get good matches pic001.jpg
-  //   std::vector< DMatch > good_matches;
-  //   for( int i = 0; i < descriptors_1.rows; i++ ){ 
-  //     if( matches[i].distance < 3*min_dist ){ 
-  //       good_matches.push_back( matches[i]);
-  //     }
-  //   }
-    
-  //   Mat img_matches;
-  //   drawMatches( img_1, keypoints_1, flippedImage, keypoints_stream,
-  //              good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-  //              vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-
-
-  //   // //-- Localize pic001.jpg
-  //   std::vector<Point2f> obj1;
-  //   std::vector<Point2f> stream;
-  //   for( int i = 0; i < good_matches.size(); i++ ){
-  //       //-- Get the keypoints from the good matches
-  //       obj1.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
-  //       stream.push_back( keypoints_stream[ good_matches[i].trainIdx ].pt );
-  //   }
-  //   Mat H = findHomography( obj1, stream, CV_RANSAC );
-
-  //   // //-- Get the corners from the pic001.jpg
-  //   std::vector<Point2f> obj1_corners(4);
-  //   obj1_corners[0] = cvPoint(0,0); 
-  //   obj1_corners[1] = cvPoint( img_1.cols, 0 );
-  //   obj1_corners[2] = cvPoint( img_1.cols, img_1.rows ); 
-  //   obj1_corners[3] = cvPoint( 0, img_1.rows );
-  //   std::vector<Point2f> stream_corners(4);
-
-  //   perspectiveTransform( obj1_corners, stream_corners, H);
-
-  //   // //-- Draw pic001.jpg border line in camera stream
-  //   line( img_matches, stream_corners[0] + Point2f( img_1.cols, 0), stream_corners[1] + Point2f( img_1.cols, 0), Scalar(0, 255, 0), 4 );
-  //   line( img_matches, stream_corners[1] + Point2f( img_1.cols, 0), stream_corners[2] + Point2f( img_1.cols, 0), Scalar( 0, 255, 0), 4 );
-  //   line( img_matches, stream_corners[2] + Point2f( img_1.cols, 0), stream_corners[3] + Point2f( img_1.cols, 0), Scalar( 0, 255, 0), 4 );
-  //   line( img_matches, stream_corners[3] + Point2f( img_1.cols, 0), stream_corners[0] + Point2f( img_1.cols, 0), Scalar( 0, 255, 0), 4 );
-
-  //   // Update GUI Window
-  //   cv::imshow(OPENCV_WINDOW, img_matches);
-  //   return img_matches;
-    
-  // }
 
   //subscriber callback
   void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -302,7 +223,7 @@ public:
     * flipcode < 0 -> flip on both axis
     */
     cv::flip(cv_ptr->image, flippedImage, 1);
-    // cv::imshow(OPENCV_WINDOW, flippedImage);
+    cv::imshow(OPENCV_WINDOW, flippedImage);
 
     // =============================================
     // BLOB TRACKING
@@ -453,50 +374,66 @@ public:
       }
       /******************************************************/
     }
-    cv::imshow(OPENCV_WINDOW, flippedImage);
 
     cv::waitKey(3);
-    cv_ptr->image = flippedImage;
-    // Output modified image stream
-    image_pub_.publish(cv_ptr->toImageMsg());
+    
     // =============================================
     // SEND BACK EDITED IMAGE IN CV TO ROS SENSOR MESSAGE
     // =============================================
-    // cv_bridge::CvImage img_bridge;
-    // sensor_msgs::Image img_msg;
-    // std_msgs::Header header;
-    // //change the output image as suitable
-    // img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, flippedImage); //convert CVimage to ROS
-    // img_bridge.toImageMsg(img_msg); 
-    // image_pub_.publish(img_msg); 
+    //change the cv image as suitable
+    sensor_msgs::ImagePtr publishback2ROS = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flippedImage).toImageMsg(); 
+    image_pub_.publish(publishback2ROS);
+
+    // =============================================
+    // SEND MARKER TO RVIZ (ARROW SHAPE)
+    // =============================================
+    //create marker for each unique detected image
+    if(detect & unique){
+      uniqueID++;
+      visualization_msgs::Marker newMarker;
+      //getting position is from : https://www.scantips.com/lights/subjectdistance.html
+      createMarker(newMarker,uniqueID,posX,posY);
+      marker_array.markers.push_back(newMarker);
+    }
+    marker_pub.publish(marker_array);
+  }
+
+  void createMarker(visualization_msgs::Marker &marker, uint32_t marker_id, double posX, double posY)
+  {
+    // Set the frame ID and timestamp
+    marker.header.frame_id = "/base_link";
+    marker.header.stamp = ros::Time::now();
+    // Set namespace and id for this marker
+    // WARNING : Any marker sent with the same namespace and id will overwrite the old one
+    marker.ns = "image_marker";
+    marker.id = marker_id;
+
+    // Set the pose of the marker
+    marker.pose.position.x = posX;
+    marker.pose.position.y = posY;
+    marker.pose.position.z = 0;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 1.0;
+    marker.pose.orientation.w = 1.0;
+     // Set the scale of the marker -- value 1 here means 1m on a side
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 1.0;
+     // Set the color -- be sure to set alpha to something non-zero!
+    marker.color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    marker.color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    marker.color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    marker.color.a = 1.0;
+    marker.type = 0; // 0=arrow, to change shape refer: http://wiki.ros.org/rviz/DisplayTypes/Marker
+    marker.action = 0; //0 = add/modify, 1 = (deprecated), 2 = delete, 3 = deleteall
+    marker.lifetime = ros::Duration(); //persistent marker
   }
 };
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "rosopencv_interface");
-  
-  //LOAD IMAGE DATASET
-  // if( argc != 2)
-  //   {
-  //    std::cout << "Missing arguments" << std::endl;
-  //    return -1;
-  //   }
-    
-  // img_1 = imread( argv[1], CV_LOAD_IMAGE_COLOR ); //load pic001.jpg
-  // img_2 = imread( argv[2], CV_LOAD_IMAGE_COLOR ); //load pic002.jpg
-  // img_3 = imread( argv[3], CV_LOAD_IMAGE_COLOR ); //load pic003.jpg
-  // img_4 = imread( argv[4], CV_LOAD_IMAGE_COLOR ); //load pic004.jpg
-  // img_5 = imread( argv[5], CV_LOAD_IMAGE_COLOR ); //load pic005.jpg
-
-  // if( !img_1.data || !img_2.data || !img_3.data || !img_4.data || !img_5.data )
-  //     { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
-
-  //   img_1 = imread( argv[1], CV_LOAD_IMAGE_COLOR ); //load pic001.jpg
-
-  // if( !img_1.data )
-  //     { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
-
   ImageConverter ic;
   ros::spin();
   return 0;

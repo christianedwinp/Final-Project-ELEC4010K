@@ -1,4 +1,45 @@
+//====================================================
+//LAUNCH FILE BUAT JALANIN FLANN MATCHER
+//====================================================
+ <node pkg="demo_elec4010k" type="rosopencv_interface" name="rosopencv_interface"
+    args="$(find demo_elec4010k)/src/picture/pic001.jpg
+    $(find demo_elec4010k)/src/picture/pic002.jpg
+    $(find demo_elec4010k)/src/picture/pic003.jpg
+    $(find demo_elec4010k)/src/picture/pic004.jpg
+    $(find demo_elec4010k)/src/picture/pic005.jpg"/>
 
+//====================================================
+//TARO DI PALING ATAS SEBAGI GLOBAL VARIABLE
+//====================================================
+cv::Mat img_1, img_2, img_3, img_3, img_4, img_5;
+
+
+//====================================================
+//TARO DI MAIN FUNCTION
+//====================================================
+  if( argc != 2)
+    {
+     std::cout << "Missing arguments" << std::endl;
+     return -1;
+    }
+    
+  img_1 = imread( argv[1], CV_LOAD_IMAGE_COLOR ); //load pic001.jpg
+  img_2 = imread( argv[2], CV_LOAD_IMAGE_COLOR ); //load pic002.jpg
+  img_3 = imread( argv[3], CV_LOAD_IMAGE_COLOR ); //load pic003.jpg
+  img_4 = imread( argv[4], CV_LOAD_IMAGE_COLOR ); //load pic004.jpg
+  img_5 = imread( argv[5], CV_LOAD_IMAGE_COLOR ); //load pic005.jpg
+
+  if( !img_1.data || !img_2.data || !img_3.data || !img_4.data || !img_5.data )
+      { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
+
+    img_1 = imread( argv[1], CV_LOAD_IMAGE_COLOR ); //load pic001.jpg
+
+  if( !img_1.data )
+      { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
+
+//====================================================
+//TARO DI IMAGE CONVERTER CLASS SEBAGAI FUNCTION
+//====================================================
   cv::Mat FlannMatcher_Homography(const cv::Mat flippedImage)
   {
   	//-- Step 1: Detect the keypoints using SURF Detector
