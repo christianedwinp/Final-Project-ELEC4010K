@@ -18,7 +18,18 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/features2d/features2d.hpp"
-#include "opencv2/face.hpp"
+
+//IF YOU USE KINETIC, YOU WILL USE OPENCV3, IN OPENCV3 YOU NEED TO INCLUDE BELOW LINE
+//IF YOU USE OPENCV < 3, YOU DON'T NEED TO INCLUDE THIS HEADER FILE
+// #include <opencv2/face.hpp>
+#if CV_MAJOR_VERSION >= 3
+  #include <opencv2/face.hpp>
+  namespace face = cv::face;
+#else
+  #include <opencv2/contrib/contrib.hpp>
+  namespace face = cv;
+#endif
+
 //For Debugging
 #include "std_msgs/String.h"
 #include "std_msgs/Bool.h"
@@ -70,7 +81,6 @@ void slamCallback(const geometry_msgs::PoseStamped& msg) {
   slam_data.pose.orientation.y = msg.pose.orientation.y;
   slam_data.pose.orientation.z = msg.pose.orientation.z;
   slam_data.pose.orientation.w = msg.pose.orientation.w;
-   
 }
 
 class ImageConverter
@@ -251,9 +261,14 @@ public:
     // =============================================
     // FLIPPED IMAGE
     // =============================================
+    /* flip image code
+     * flipcode = 0 -> flip on X axis
+     * flipcode > 0 -> flip on Y axis
+     * flipcode < 0 -> flip on both axis
+    */
     cv::Mat flippedImage;
     cv::flip(cv_ptr->image, flippedImage, 1);
-   // =============================================
+   	// =============================================
     // BLOB TRACKING
     // =============================================
 

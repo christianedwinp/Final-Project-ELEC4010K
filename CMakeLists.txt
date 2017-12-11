@@ -17,6 +17,115 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package( OpenCV REQUIRED )
+message(STATUS "OpenCV version = ${OpenCV_VERSION}")
+
+
+#FOR EDWIN LAPTOP ONLY
+# set(OpenCV_LIB_COMPONENTS 
+  # opencv_calib3d 
+  # opencv_coreopencv_dnn
+  # opencv_features2d
+  # opencv_flann
+  # opencv_highgui
+  # opencv_imgcodecs
+  # opencv_imgproc
+  # opencv_ml
+  # opencv_objdetect
+  # opencv_photo
+  # opencv_shape
+  # opencv_stitching
+  # opencv_superres
+  # opencv_video
+  # opencv_videoio
+  # opencv_videostab
+  # opencv_viz
+  # opencv_aruco
+  # opencv_bgsegm
+  # opencv_bioinspired
+  # opencv_ccalib
+  # opencv_datasets
+  # opencv_dpm
+  # opencv_face
+  # opencv_freetype
+  # opencv_fuzzy
+  # opencv_img_hash
+  # opencv_line_descriptor
+  # opencv_optflow
+  # opencv_phase_unwrapping
+  # opencv_plot
+  # opencv_reg
+  # opencv_rgbd
+  # opencv_saliency
+  # opencv_stereo
+  # opencv_structured_light
+  # opencv_surface_matching
+  # opencv_text
+  # opencv_tracking
+  # opencv_xfeatures2d
+  # opencv_ximgproc
+  # opencv_xobjdetect
+  # opencv_xphoto)
+# set(OpenCV_INCLUDE_DIRS 
+  # /usr/include/opencv 
+  # /usr/include
+  # /usr/include/opencv2
+  ## "/home/edwin/OpenCV/build" "/home/edwin/OpenCV/opencv/include" "/home/edwin/OpenCV/opencv/include/opencv" "/home/edwin/OpenCV/opencv/modules/core/include" "/home/edwin/OpenCV/opencv/modules/flann/include" "/home/edwin/OpenCV/opencv/modules/imgproc/include" "/home/edwin/OpenCV/opencv/modules/ml/include" "/home/edwin/OpenCV/opencv/modules/objdetect/include" "/home/edwin/OpenCV/opencv_contrib/modules/phase_unwrapping/include" "/home/edwin/OpenCV/opencv/modules/photo/include" "/home/edwin/OpenCV/opencv_contrib/modules/plot/include" "/home/edwin/OpenCV/opencv_contrib/modules/reg/include" "/home/edwin/OpenCV/opencv_contrib/modules/surface_matching/include" "/home/edwin/OpenCV/opencv/modules/video/include" "/home/edwin/OpenCV/opencv/modules/viz/include" "/home/edwin/OpenCV/opencv_contrib/modules/xphoto/include" "/home/edwin/OpenCV/opencv/modules/dnn/include" "/home/edwin/OpenCV/opencv_contrib/modules/freetype/include" "/home/edwin/OpenCV/opencv_contrib/modules/fuzzy/include" "/home/edwin/OpenCV/opencv_contrib/modules/img_hash/include" "/home/edwin/OpenCV/opencv/modules/imgcodecs/include" "/home/edwin/OpenCV/opencv/modules/shape/include" "/home/edwin/OpenCV/opencv/modules/videoio/include" "/home/edwin/OpenCV/opencv_contrib/modules/xobjdetect/include" "/home/edwin/OpenCV/opencv/modules/highgui/include" "/home/edwin/OpenCV/opencv/modules/superres/include" "/home/edwin/OpenCV/opencv/modules/ts/include" "/home/edwin/OpenCV/opencv_contrib/modules/bioinspired/include" "/home/edwin/OpenCV/opencv_contrib/modules/dpm/include" "/home/edwin/OpenCV/opencv/modules/features2d/include" "/home/edwin/OpenCV/opencv_contrib/modules/line_descriptor/include" "/home/edwin/OpenCV/opencv_contrib/modules/saliency/include" "/home/edwin/OpenCV/opencv_contrib/modules/text/include" "/home/edwin/OpenCV/opencv/modules/calib3d/include" "/home/edwin/OpenCV/opencv_contrib/modules/ccalib/include" "/home/edwin/OpenCV/opencv_contrib/modules/datasets/include" "/home/edwin/OpenCV/opencv_contrib/modules/rgbd/include" "/home/edwin/OpenCV/opencv_contrib/modules/stereo/include" "/home/edwin/OpenCV/opencv_contrib/modules/structured_light/include" "/home/edwin/OpenCV/opencv_contrib/modules/tracking/include" "/home/edwin/OpenCV/opencv/modules/videostab/include" "/home/edwin/OpenCV/opencv_contrib/modules/xfeatures2d/include" "/home/edwin/OpenCV/opencv_contrib/modules/ximgproc/include" "/home/edwin/OpenCV/opencv_contrib/modules/aruco/include" "/home/edwin/OpenCV/opencv_contrib/modules/bgsegm/include" "/home/edwin/OpenCV/opencv_contrib/modules/face/include" "/home/edwin/OpenCV/opencv/modules/java/include" "/home/edwin/OpenCV/opencv_contrib/modules/optflow/include" "/home/edwin/OpenCV/opencv/modules/stitching/include")
+  # /home/edwin/OpenCV/build
+  # /home/edwin/OpenCV/opencv/include
+  # /home/edwin/OpenCV/opencv/include/opencv
+  # /home/edwin/OpenCV/opencv/modules/core/include
+  # /home/edwin/OpenCV/opencv/modules/flann/include
+  # /home/edwin/OpenCV/opencv/modules/imgproc/include
+  # /home/edwin/OpenCV/opencv/modules/ml/include
+  # /home/edwin/OpenCV/opencv/modules/objdetect/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/phase_unwrapping/include
+  # /home/edwin/OpenCV/opencv/modules/photo/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/plot/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/reg/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/surface_matching/include
+  # /home/edwin/OpenCV/opencv/modules/video/include
+  # /home/edwin/OpenCV/opencv/modules/viz/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/xphoto/include
+  # /home/edwin/OpenCV/opencv/modules/dnn/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/freetype/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/fuzzy/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/img_hash/include
+  # /home/edwin/OpenCV/opencv/modules/imgcodecs/include
+  # /home/edwin/OpenCV/opencv/modules/shape/include
+  # /home/edwin/OpenCV/opencv/modules/videoio/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/xobjdetect/include
+  # /home/edwin/OpenCV/opencv/modules/highgui/include
+  # /home/edwin/OpenCV/opencv/modules/superres/include
+  # /home/edwin/OpenCV/opencv/modules/ts/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/bioinspired/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/dpm/include
+  # /home/edwin/OpenCV/opencv/modules/features2d/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/line_descriptor/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/saliency/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/text/include
+  # /home/edwin/OpenCV/opencv/modules/calib3d/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/ccalib/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/datasets/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/rgbd/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/stereo/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/structured_light/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/tracking/include
+  # /home/edwin/OpenCV/opencv/modules/videostab/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/xfeatures2d/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/ximgproc/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/aruco/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/bgsegm/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/face/include
+  # /home/edwin/OpenCV/opencv/modules/java/include
+  # /home/edwin/OpenCV/opencv_contrib/modules/optflow/include
+  # /home/edwin/OpenCV/opencv/modules/stitching/include)
+# set(OpenCV_LIB_DIR /home/edwin/OpenCV/build/lib)
+
+
+message(STATUS "OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV_LIBS = ${OpenCV_LIBS}")
+message(STATUS "OpenCV_LIB_COMPONENTS = ${OpenCV_LIB_COMPONENTS}")
+message(STATUS "OpenCV_LIB_DIR = $(OpenCV_LIB_DIR)")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
