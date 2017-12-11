@@ -26,8 +26,8 @@
 
 using namespace cv;
 //image window name
-static const std::string OPENCV_WINDOW = "Image window";
-static const std::string OPENCV_WINDOW2 = "Image window2";
+static const std::string OPENCV_WINDOW = "Flipped Image Raw";
+static const std::string OPENCV_WINDOW2 = "Blob Tracker";
 static const std::string OPENCV_WINDOW3 = "Cropped Faces";
 std::string image_address = "../catkin_ws/src/demo_elec4010k/image/";
 std::string actual_image_path;
@@ -47,6 +47,7 @@ bool auto_control_condition = false;
 float x_pos, y_pos, orientation;
 
 //Marker RVIZ variable
+bool imageMemory[5] = {0};
 uint32_t uniqueID;
 
 class ImageConverter
@@ -72,7 +73,7 @@ class ImageConverter
 
   // Send RVIZ Marker
   ros::Publisher marker_pub;
-  visualization_msgs::MarkerArray marker_array;
+  // visualization_msgs::MarkerArray marker_array;
 
 public:
   ImageConverter()
@@ -370,7 +371,7 @@ public:
       // Give Marker only if confidence level <= threshold (distance)
       if (confidence_level <= THRESHOLD) {
         cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
-        cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
+        cv::rectangle(flippedImage, detected_faces[index], cv::cSalar(255),5);       
       }
       /******************************************************/
     }
@@ -388,17 +389,18 @@ public:
     // SEND MARKER TO RVIZ (ARROW SHAPE)
     // =============================================
     //create marker for each unique detected image
-    if(detect & unique){
+    if(confidence_level <= THRESHOLD && checkImageUniqueness(label_prediction)){
       uniqueID++;
       visualization_msgs::Marker newMarker;
       //getting position is from : https://www.scantips.com/lights/subjectdistance.html
-      createMarker(newMarker,uniqueID,posX,posY);
-      marker_array.markers.push_back(newMarker);
+      createMarker(newMarker,uniqueID,currentPose,distance2image);
+      // marker_array.markers.push_back(newMarker);
+      // marker_pub.publish(marker_array);
+      marker_pub.publish(newMarker);
     }
-    marker_pub.publish(marker_array);
   }
 
-  void createMarker(visualization_msgs::Marker &marker, uint32_t marker_id, double posX, double posY)
+  void createMarker(visualization_msgs::Marker &marker, uint32_t marker_id, pos)
   {
     // Set the frame ID and timestamp
     marker.header.frame_id = "/base_link";
@@ -409,8 +411,11 @@ public:
     marker.id = marker_id;
 
     // Set the pose of the marker
-    marker.pose.position.x = posX;
-    marker.pose.position.y = posY;
+    geometry_msgs::PoseStamped basePose, mapPose;
+    basePose.header.frame_id="base_link"
+
+    marker.pose.position.x = pos.pose.position.x - 2*np.cos(robot_theta);
+    marker.pose.position.y = pos.pose.position.y - 2*np.sin(robot_theta);
     marker.pose.position.z = 0;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
@@ -428,7 +433,18 @@ public:
     marker.type = 0; // 0=arrow, to change shape refer: http://wiki.ros.org/rviz/DisplayTypes/Marker
     marker.action = 0; //0 = add/modify, 1 = (deprecated), 2 = delete, 3 = deleteall
     marker.lifetime = ros::Duration(); //persistent marker
+  }  
+
+  bool checkImageUniqueness(int detectedImage){
+    if(imageMemory[detectedImage] == false){
+      imageMemory[detectedImage] == true;
+      return true;
+    }else{
+      return false;
+    }
   }
+
+
 };
 
 int main(int argc, char** argv)
