@@ -100,10 +100,15 @@ class ImageConverter
   cv::HOGDescriptor hog_;
   /***************/
   // Detection
-  /*if you use openCV3
-   * Ptr<face::FaceRecognizer> model;
-   * if you use openCV2 */
-  Ptr<cv::FaceRecognizer> model;
+  // if you use openCV3
+  #if CV_MAJOR_VERSION >= 3
+    Ptr<face::FaceRecognizer> model;
+  #else
+    Ptr<cv::FaceRecognizer> model;
+  #endif
+  
+   // if you use openCV2 
+  // 
   
   /*******************/
   // Marker & subscribe to slam_out orientation
@@ -230,7 +235,12 @@ public:
         directories = training_directories.str();
         images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(4);    
     }
-    model = createEigenFaceRecognizer();
+    #if CV_MAJOR_VERSION >= 3
+      model = face::createEigenFaceRecognizer();
+    #else
+      model = createEigenFaceRecognizer();
+    #endif
+    
     model->train(images,labels);
 
     /************/
@@ -270,7 +280,7 @@ public:
     */
     cv::Mat flippedImage;
     cv::flip(cv_ptr->image, flippedImage, 1);
-   	// =============================================
+    // =============================================
     // BLOB TRACKING
     // =============================================
 
