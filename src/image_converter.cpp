@@ -24,10 +24,8 @@
 // #include <opencv2/face.hpp>
 #if CV_MAJOR_VERSION >= 3
   #include <opencv2/face.hpp>
-  namespace face = cv::face;
 #else
   #include <opencv2/contrib/contrib.hpp>
-  namespace face = cv;
 #endif
 
 //For Debugging
@@ -102,7 +100,11 @@ class ImageConverter
   cv::HOGDescriptor hog_;
   /***************/
   // Detection
-  Ptr<face::FaceRecognizer> model;
+  /*if you use openCV3
+   * Ptr<face::FaceRecognizer> model;
+   * if you use openCV2 */
+  Ptr<cv::FaceRecognizer> model;
+  
   /*******************/
   // Marker & subscribe to slam_out orientation
   ros::Publisher image_marker;
@@ -228,7 +230,7 @@ public:
         directories = training_directories.str();
         images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(4);    
     }
-    model = face::createEigenFaceRecognizer();
+    model = createEigenFaceRecognizer();
     model->train(images,labels);
 
     /************/
