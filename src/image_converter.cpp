@@ -3,11 +3,14 @@
 // Ideally we want to keep the iamge in the middle, say 250*250
 /**************************************************/
 /////FIXX: FIX THE SUBSCRIBE TO AUTO CONTROL MODE
+#define PI 3.141519
+
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
@@ -33,6 +36,7 @@
 #include "std_msgs/Bool.h"
 #include <sstream>
 #include <math.h>
+#include <stdint.h>
 
 
 using namespace cv;
@@ -68,6 +72,28 @@ float x,y,y_x_ratio,angle_det;
 /************************/
 visualization_msgs::Marker marker;
 geometry_msgs::PoseStamped slam_data;
+const int DATA_POINT = 900;
+
+float angle_max;
+float angle_increment;
+float laser_scan_data[DATA_POINT];
+float laser_radian_angle;
+int data_number;
+
+void LaserCallback(const sensor_msgs::LaserScan& msg) {
+  angle_max = msg.angle_max;
+  angle_increment = msg.angle_increment;
+  for (int i = 0; i < DATA_POINT; i++) {
+    if(msg.ranges[i] < 0) {
+      laser_scan_data[i] = 0;
+    } else if (msg.ranges[i] >50) {
+      laser_scan_data[i] = 50;
+    } else {
+    laser_scan_data[i] = (float)msg.ranges[i];
+    }
+  }
+}
+
 
 // bool obama_detect = true;
 void slamCallback(const geometry_msgs::PoseStamped& msg) {
@@ -114,6 +140,7 @@ class ImageConverter
   // Marker & subscribe to slam_out orientation
   ros::Publisher image_marker;
   ros::Subscriber slam_position;
+  ros::Subscriber laser_range_data;
 
 public:
   ImageConverter()
@@ -168,6 +195,8 @@ public:
     image_marker.publish( marker );
     // Subscribe to ros_slam_out
     slam_position = nh_.subscribe("/slam_out_pose", 1, slamCallback);
+    laser_range_data = nh_.subscribe("/vrep/scan",1,LaserCallback);
+
 
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
@@ -396,8 +425,8 @@ public:
       distance_from_car = 256/(TAN_22_5*distance_from_car);
       /******************************************/
       // LOCATION OF IMAGE
-      x = 256 - detected_faces[index].x;
-      y = 512 - detected_faces[index].y;
+      x = 256 - (detected_faces[index].x + detected_faces[index].width/2);
+      y = 512 - (detected_faces[index].y + detected_faces[index].height/2);
       y_x_ratio = x/y;
       angle_det = atan(abs(y_x_ratio));
       switch(label_prediction) {
@@ -423,6 +452,13 @@ public:
       text_to_put << label_prediction << " " << confidence_level;
       text_to_write = text_to_put.str();
 
+      if(y_x_ratio > 0) {
+        laser_radian_angle = PI/2.0 - angle_det;
+      } else {
+        laser_radian_angle = PI/2.0 + angle_det;
+      }
+      data_number = abs(laser_radian_angle/ angle_increment);
+  
       /******************************************
       *****************************************
       *********************************************
@@ -430,17 +466,33 @@ public:
       *******************************************/
       std::stringstream DEBUG;
       std_msgs::String debug_msgg;
-      DEBUG << "DISTANCE IS : " << distance_from_car<< "x: "<< x << " y: "<< y << " ratio: "<<y_x_ratio;
+      DEBUG << "DISTANCE IS : " << distance_from_car<< "x: "<< x << " y: "<< y << " ratio: "<<y_x_ratio <<" ";
+      DEBUG << "Laser Distance is " << data_number << " ";
+      DEBUG << laser_scan_data[data_number];
       debug_msgg.data = DEBUG.str();
       chatter_debug.publish(debug_msgg);
 
-      marker.color.a = 1.0; // Don't forget to set the alpha!
+      /******************************************
+      *****************************************
+      *********************************************
+      DEBUGGING SECTION DELETE LATER 
+      *******************************************/
+      // Update actual dist
+      if(label_prediction != 1) {
+        if(laser_scan_data[data_number] != 0) {
+          distance_from_car = laser_scan_data[data_number];  
+        }
+      }
+
+      marker.color.a = 1.0; 
       if(y_x_ratio > 0) {
         marker.pose.position.x = distance_from_car*sin(angle_det);
       } else {
         marker.pose.position.x = -distance_from_car*sin(angle_det);
       }
       marker.pose.position.y = -distance_from_car*cos(angle_det);
+      marker.pose.orientation.w = slam_data.pose.orientation.w;
+
       
       /*******/
       // Draw on screen.
