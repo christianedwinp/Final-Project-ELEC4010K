@@ -6,10 +6,11 @@
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
+
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
-
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -22,12 +23,13 @@
 #include "std_msgs/String.h"
 #include "std_msgs/Bool.h"
 #include <sstream>
+#include <math.h>
 
 
 using namespace cv;
 //image window name
-static const std::string OPENCV_WINDOW = "Flipped Image Raw";
-static const std::string OPENCV_WINDOW2 = "Blob Tracker";
+static const std::string OPENCV_WINDOW = "Image window";
+static const std::string OPENCV_WINDOW2 = "Image window2";
 static const std::string OPENCV_WINDOW3 = "Cropped Faces";
 std::string image_address = "../catkin_ws/src/demo_elec4010k/image/";
 std::string actual_image_path;
@@ -35,20 +37,41 @@ Mat croppedImage;
 int image_counter = 0;
 bool image_collection = false; //change to true for training
 
-// Face Recognition variable
+/******************/
+// Face Recognizer
 std::vector<Mat> images;
 std::vector<int> labels;
 int label_prediction = -1;
 double confidence_level = -1;
+// Obama | Avril | Legolas | Levi | Zhang | 
+double image_scale[5] = {0.503, 0.583, 0.727, 0.569, 0.639};
 const double THRESHOLD = 1500;
+float distance_from_car=0;
+const double TAN_22_5 = 0.414;
+/******************/
 
-//Blob tracking variable
 bool auto_control_condition = false;
 float x_pos, y_pos, orientation;
 
-//Marker RVIZ variable
-bool imageMemory[5] = {0};
-uint32_t uniqueID;
+float x,y,y_x_ratio,angle_det;
+/*************************/
+// Global Marker
+/************************/
+visualization_msgs::Marker marker;
+geometry_msgs::PoseStamped slam_data;
+
+// bool obama_detect = true;
+void slamCallback(const geometry_msgs::PoseStamped& msg) {
+  slam_data.pose.position.x = msg.pose.position.x;
+  slam_data.pose.position.y = msg.pose.position.y;
+  slam_data.pose.position.z = msg.pose.position.z;
+
+  slam_data.pose.orientation.x = msg.pose.orientation.x;
+  slam_data.pose.orientation.y = msg.pose.orientation.y;
+  slam_data.pose.orientation.z = msg.pose.orientation.z;
+  slam_data.pose.orientation.w = msg.pose.orientation.w;
+   
+}
 
 class ImageConverter
 {
@@ -70,10 +93,10 @@ class ImageConverter
   /***************/
   // Detection
   Ptr<face::FaceRecognizer> model;
-
-  // Send RVIZ Marker
-  ros::Publisher marker_pub;
-  // visualization_msgs::MarkerArray marker_array;
+  /*******************/
+  // Marker & subscribe to slam_out orientation
+  ros::Publisher image_marker;
+  ros::Subscriber slam_position;
 
 public:
   ImageConverter()
@@ -99,7 +122,36 @@ public:
     
     cmd_vel = nh_.advertise<geometry_msgs::Twist>("/vrep/cmd_vel", 1);
     chatter_debug = nh_.advertise<std_msgs::String>("/debugging",1000);  
+    image_marker = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 0);
     //OpenCV HighGUI calls to create a display window on start-up
+    /*******************************************/
+    // Setting up Marker
+    marker.header.frame_id = "base_link";
+    marker.header.stamp = ros::Time();
+    marker.ns = "my_namespace";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = 1;
+    marker.pose.position.y = 1;
+    marker.pose.position.z = 0.6;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 1;
+    marker.scale.y = 0;
+    marker.scale.z = 1;
+    marker.color.a = 1.0; // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    // marker.lifetime = ros::Duration();
+    /********************************************/
+    image_marker.publish( marker );
+    // Subscribe to ros_slam_out
+    slam_position = nh_.subscribe("/slam_out_pose", 1, slamCallback);
+
     cv::namedWindow(OPENCV_WINDOW);
     cv::namedWindow(OPENCV_WINDOW2);
     if(image_collection) cv::namedWindow(OPENCV_WINDOW3);
@@ -107,12 +159,6 @@ public:
     /************/
     // Train Datasets
     std::string directories;
-    // for (int i = 1; i < 6; i++) {
-    //   std::stringstream training_directories;
-    //   training_directories << image_address << "pic00" << i << ".jpg";
-    //   directories = training_directories.str();
-    //   images.push_back(imread(directories, CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(i-1);
-    // }
     //images for first person
     for (int i = 0; i < 42; i++) {
         std::stringstream training_directories;
@@ -176,9 +222,6 @@ public:
     model->train(images,labels);
 
     /************/
-
-    //publish image marker to RVIZ
-    marker_pub = nh_.advertise<visualization_msgs::Marker>("imgdetected_marker", 1);
   }
 
   //OpenCV HighGUI calls to destroy a display window on shutdown
@@ -197,15 +240,6 @@ public:
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      //convert to suitable color encoding scheme
-      /*color encoding scheme:
-       * mono8  : CV_8UC1, grayscale image
-       * mono16 : CV_16UC1, 16-bit grayscale image
-       * bgr8   : CV_8UC3, color image with blue-green-red color order
-       * rgb8   : CV_8UC3, color image with red-green-blue color order
-       * bgra8  : CV_8UC4, BGR color image with an alpha channel
-       * rgba8  : CV_8UC4, RGB color image with an alpha channel
-      */
       cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     }
     catch (cv_bridge::Exception& e)
@@ -218,15 +252,8 @@ public:
     // FLIPPED IMAGE
     // =============================================
     cv::Mat flippedImage;
-    /* flip image
-    * flipcode = 0 -> flip on X axis
-    * flipcode > 0 -> flip on Y axis
-    * flipcode < 0 -> flip on both axis
-    */
     cv::flip(cv_ptr->image, flippedImage, 1);
-    cv::imshow(OPENCV_WINDOW, flippedImage);
-
-    // =============================================
+   // =============================================
     // BLOB TRACKING
     // =============================================
 
@@ -318,9 +345,6 @@ public:
     unsigned index = 0;
     if(detected_faces.size() >= 1) {
       // Do Something
-      if(detected_faces.size() > 1) {
-        //do comparison
-      }
       croppedImage = flippedImage(detected_faces[index]);
       /************************/
       // Image Detection
@@ -336,6 +360,19 @@ public:
       // Add confidence level to differentiate w ground
       std::stringstream text_to_put;
       std::string text_to_write;
+      /******************************************/
+      // image_scale
+      distance_from_car = detected_faces[index].width;
+      // Pixel Representing 1m image
+      distance_from_car /= image_scale[label_prediction];
+      // Finding the actual distance
+      distance_from_car = 256/(TAN_22_5*distance_from_car);
+      /******************************************/
+      // LOCATION OF IMAGE
+      x = 256 - detected_faces[index].x;
+      y = 512 - detected_faces[index].y;
+      y_x_ratio = x/y;
+      angle_det = atan(abs(y_x_ratio));
       switch(label_prediction) {
         case 0:
           text_to_put << "Obama ";
@@ -350,13 +387,34 @@ public:
           text_to_put << "Levi ";
           break;
         case 4:
-          text_to_put << "Chinese dude ";
+          text_to_put << "Zhang ";
           break;
         default:
           break;
       }
+      // text_to_put << slam_data->pose.position.x << ' ' << slam_data->pose.position.y << ' ' << slam_data->pose.position.z; 
       text_to_put << label_prediction << " " << confidence_level;
       text_to_write = text_to_put.str();
+
+      /******************************************
+      *****************************************
+      *********************************************
+      DEBUGGING SECTION DELETE LATER 
+      *******************************************/
+      std::stringstream DEBUG;
+      std_msgs::String debug_msgg;
+      DEBUG << "DISTANCE IS : " << distance_from_car<< "x: "<< x << " y: "<< y << " ratio: "<<y_x_ratio;
+      debug_msgg.data = DEBUG.str();
+      chatter_debug.publish(debug_msgg);
+
+      marker.color.a = 1.0; // Don't forget to set the alpha!
+      if(y_x_ratio > 0) {
+        marker.pose.position.x = distance_from_car*sin(angle_det);
+      } else {
+        marker.pose.position.x = -distance_from_car*sin(angle_det);
+      }
+      marker.pose.position.y = -distance_from_car*cos(angle_det);
+      
       /*******/
       // Draw on screen.
       if (image_collection) {
@@ -371,80 +429,21 @@ public:
       // Give Marker only if confidence level <= threshold (distance)
       if (confidence_level <= THRESHOLD) {
         cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
-        cv::rectangle(flippedImage, detected_faces[index], cv::cSalar(255),5);       
+        cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
+        image_marker.publish( marker );
       }
       /******************************************************/
+    } else {
+      marker.color.a = 0; // Don't forget to set the alpha!
+      image_marker.publish( marker );
     }
+    cv::imshow(OPENCV_WINDOW, flippedImage);
 
     cv::waitKey(3);
-    
-    // =============================================
-    // SEND BACK EDITED IMAGE IN CV TO ROS SENSOR MESSAGE
-    // =============================================
-    //change the cv image as suitable
-    sensor_msgs::ImagePtr publishback2ROS = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flippedImage).toImageMsg(); 
-    image_pub_.publish(publishback2ROS);
-
-    // =============================================
-    // SEND MARKER TO RVIZ (ARROW SHAPE)
-    // =============================================
-    //create marker for each unique detected image
-    if(confidence_level <= THRESHOLD && checkImageUniqueness(label_prediction)){
-      uniqueID++;
-      visualization_msgs::Marker newMarker;
-      //getting position is from : https://www.scantips.com/lights/subjectdistance.html
-      createMarker(newMarker,uniqueID,currentPose,distance2image);
-      // marker_array.markers.push_back(newMarker);
-      // marker_pub.publish(marker_array);
-      marker_pub.publish(newMarker);
-    }
-  }
-
-  void createMarker(visualization_msgs::Marker &marker, uint32_t marker_id, pos)
-  {
-    // Set the frame ID and timestamp
-    marker.header.frame_id = "/base_link";
-    marker.header.stamp = ros::Time::now();
-    // Set namespace and id for this marker
-    // WARNING : Any marker sent with the same namespace and id will overwrite the old one
-    marker.ns = "image_marker";
-    marker.id = marker_id;
-
-    // Set the pose of the marker
-    geometry_msgs::PoseStamped basePose, mapPose;
-    basePose.header.frame_id="base_link"
-
-    marker.pose.position.x = pos.pose.position.x - 2*np.cos(robot_theta);
-    marker.pose.position.y = pos.pose.position.y - 2*np.sin(robot_theta);
-    marker.pose.position.z = 0;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 1.0;
-    marker.pose.orientation.w = 1.0;
-     // Set the scale of the marker -- value 1 here means 1m on a side
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 1.0;
-     // Set the color -- be sure to set alpha to something non-zero!
-    marker.color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    marker.color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    marker.color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    marker.color.a = 1.0;
-    marker.type = 0; // 0=arrow, to change shape refer: http://wiki.ros.org/rviz/DisplayTypes/Marker
-    marker.action = 0; //0 = add/modify, 1 = (deprecated), 2 = delete, 3 = deleteall
-    marker.lifetime = ros::Duration(); //persistent marker
-  }  
-
-  bool checkImageUniqueness(int detectedImage){
-    if(imageMemory[detectedImage] == false){
-      imageMemory[detectedImage] == true;
-      return true;
-    }else{
-      return false;
-    }
-  }
-
-
+    cv_ptr->image = flippedImage;
+    // Output modified image stream
+    image_pub_.publish(cv_ptr->toImageMsg());
+   }
 };
 
 int main(int argc, char** argv)
