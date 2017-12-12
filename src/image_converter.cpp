@@ -14,6 +14,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -40,6 +41,7 @@
 
 
 using namespace cv;
+using namespace std;
 //image window name
 static const std::string OPENCV_WINDOW = "Image window";
 static const std::string OPENCV_WINDOW2 = "Image window2";
@@ -66,12 +68,14 @@ const double TAN_22_5 = 0.414;
 bool auto_control_condition = false;
 float x_pos, y_pos, orientation;
 
-float x,y,y_x_ratio,angle_det;
+float x,y,y_x_ratio,angle_det,x_rel, y_rel;
 /*************************/
 // Global Marker
 /************************/
 visualization_msgs::Marker marker;
+visualization_msgs::MarkerArray markers_data;
 geometry_msgs::PoseStamped slam_data;
+bool status_detection[5] = {true, true, true, true, true};
 const int DATA_POINT = 900;
 
 float angle_max;
@@ -166,33 +170,37 @@ public:
     
     cmd_vel = nh_.advertise<geometry_msgs::Twist>("/vrep/cmd_vel", 1);
     chatter_debug = nh_.advertise<std_msgs::String>("/debugging",1000);  
-    image_marker = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 0);
+    image_marker = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 100);
+
+    markers_data.markers.resize(5);
     //OpenCV HighGUI calls to create a display window on start-up
-    /*******************************************/
-    // Setting up Marker
-    marker.header.frame_id = "base_link";
-    marker.header.stamp = ros::Time();
-    marker.ns = "my_namespace";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = 1;
-    marker.pose.position.y = 1;
-    marker.pose.position.z = 0.6;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-    marker.scale.x = 1;
-    marker.scale.y = 0;
-    marker.scale.z = 1;
-    marker.color.a = 1.0; // Don't forget to set the alpha!
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
-    // marker.lifetime = ros::Duration();
+    // Setting Markers
+    for (int i = 0; i < 5; i ++) {
+      markers_data.markers[i].header.frame_id = "map";
+      markers_data.markers[i].header.stamp = ros::Time();
+      markers_data.markers[i].ns = "my_namespace";
+      markers_data.markers[i].id = i;
+      markers_data.markers[i].type = visualization_msgs::Marker::SPHERE;
+      markers_data.markers[i].action = visualization_msgs::Marker::ADD;
+      markers_data.markers[i].pose.position.x = 1;
+      markers_data.markers[i].pose.position.y = 1;
+      markers_data.markers[i].pose.position.z = 0.6;
+      markers_data.markers[i].pose.orientation.x = 0.0;
+      markers_data.markers[i].pose.orientation.y = 0.0;
+      markers_data.markers[i].pose.orientation.z = 0.0;
+      markers_data.markers[i].pose.orientation.w = 1.0;
+      markers_data.markers[i].scale.x = 1;
+      markers_data.markers[i].scale.y = 0;
+      markers_data.markers[i].scale.z = 1;
+      markers_data.markers[i].color.a = 0; // Don't forget to set the alpha!
+      markers_data.markers[i].color.r = 1.0/(i+1);
+      markers_data.markers[i].color.g = 1.0/(i+1);
+      markers_data.markers[i].color.b = 1.0;
+      markers_data.markers[i].lifetime = ros::Duration();
+    }
+
     /********************************************/
-    image_marker.publish( marker );
+    image_marker.publish( markers_data );
     // Subscribe to ros_slam_out
     slam_position = nh_.subscribe("/slam_out_pose", 1, slamCallback);
     laser_range_data = nh_.subscribe("/vrep/scan",1,LaserCallback);
@@ -484,16 +492,34 @@ public:
         }
       }
 
-      marker.color.a = 1.0; 
-      if(y_x_ratio > 0) {
-        marker.pose.position.x = distance_from_car*sin(angle_det);
-      } else {
-        marker.pose.position.x = -distance_from_car*sin(angle_det);
-      }
-      marker.pose.position.y = -distance_from_car*cos(angle_det);
-      marker.pose.orientation.w = slam_data.pose.orientation.w;
+      if (status_detection[label_prediction]) { 
 
-      
+        if(y_x_ratio > 0) {
+          markers_data.markers[label_prediction].pose.position.x = distance_from_car*sin(angle_det);
+        } else {
+          markers_data.markers[label_prediction].pose.position.x = -distance_from_car*sin(angle_det);
+        }
+        markers_data.markers[label_prediction].pose.position.y = -distance_from_car*cos(angle_det);
+
+        // Now perform matrix transformation to absolute coordinate
+        // delta x absolute = x read cos theta - yread sin theta
+        // delta y absolute = x read sin theta + y read cos theta
+        // theta is obtained from 2*acos(w)
+        if (slam_data.pose.orientation.z > 0) {
+          angle_det = 2.0*acos(slam_data.pose.orientation.w);
+        } else {
+          angle_det = -2.0*acos(slam_data.pose.orientation.w);
+        }
+        x_rel = markers_data.markers[label_prediction].pose.position.x * cos(angle_det) - markers_data.markers[label_prediction].pose.position.y * sin(angle_det);
+        y_rel = markers_data.markers[label_prediction].pose.position.x * sin(angle_det) + markers_data.markers[label_prediction].pose.position.y * cos(angle_det);
+        // markers_data.markers[label_prediction].pose.orientation.w = slam_data.pose.orientation.w;
+
+        markers_data.markers[label_prediction].pose.position.x = slam_data.pose.position.x + x_rel;
+        markers_data.markers[label_prediction].pose.position.y = slam_data.pose.position.y + y_rel;
+
+        markers_data.markers[label_prediction].scale.x = abs(1.0*cos(angle_det));
+        markers_data.markers[label_prediction].scale.y = abs(1.0*sin(angle_det));
+      }
       /*******/
       // Draw on screen.
       if (image_collection) {
@@ -509,19 +535,20 @@ public:
       if (confidence_level <= THRESHOLD) {
         cv::putText(flippedImage, text_to_write, Point2f(detected_faces[index].x, detected_faces[index].y), FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,255,255));
         cv::rectangle(flippedImage, detected_faces[index], cv::Scalar(255),5);       
-        image_marker.publish( marker );
+        // markers[label_prediction] = marker;
+        markers_data.markers[label_prediction].color.a = 1.0;
+        // status_detection[label_prediction] = false;
+        // image_marker.publish( markers_data );
       }
       /******************************************************/
-    } else {
-      marker.color.a = 0; // Don't forget to set the alpha!
-      image_marker.publish( marker );
-    }
+    } 
     cv::imshow(OPENCV_WINDOW, flippedImage);
 
     cv::waitKey(3);
     cv_ptr->image = flippedImage;
     // Output modified image stream
     image_pub_.publish(cv_ptr->toImageMsg());
+    image_marker.publish( markers_data );
    }
 };
 
